@@ -1,0 +1,4 @@
+*.out
+.llvm_clone_error
+.llvm_clone_log
+*/.build_error
