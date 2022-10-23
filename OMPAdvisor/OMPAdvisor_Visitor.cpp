@@ -114,7 +114,7 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
 
     lastKernel->setEndLoc(dyn_cast<OMPTargetDirective>(st)->getInnermostCapturedStmt()->getEndLoc());
 
-    OMPTargetDirective *omp = dyn_cast<OMPTargetDirective>(st);
+/*    OMPTargetDirective *omp = dyn_cast<OMPTargetDirective>(st);
     if(omp->hasClausesOfKind<OMPMapClause>()) {
       //auto mapClauses = omp->getClausesOfKind(OMPMapClause);
       int numClauses = omp->getNumClauses();
@@ -143,25 +143,16 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
                   }
                 }
                 llvm::errs() << "-------------\n";
-                /*for(auto child2 : array1->children()) {
-                  if(child2 && dyn_cast<OMPArraySectionExpr>(child2)) {
-                    OMPArraySectionExpr *array2 = dyn_cast<OMPArraySectionExpr>(child2);
-                    llvm::errs() << "=============\n";
-                    array2->getBase()->dump();
-                    array2->getLowerBound()->dump();
-                    array2->getLength()->dump();
-                    array2->getStride()->dump();
-                    llvm::errs() << "-------------\n";
-                  }
-                }*/
               } else if(dyn_cast<DeclRefExpr>(child1)) {
+                string name = dyn_cast<DeclRefExpr>(child1)->getDecl()->getNameAsString();
+                llvm::errs() << "Variable = " << name << "\n";
               }
               llvm::errs() << "*************\n";
             }
           }
         }
       }
-    }
+    }*/
 
     if(insideLoop) {
         lastKernel->setInLoop(true);

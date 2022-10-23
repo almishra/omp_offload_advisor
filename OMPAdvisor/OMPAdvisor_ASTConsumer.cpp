@@ -19,9 +19,9 @@ using namespace std;
 
 std::string CODE_DEC_TIMEVAL = "struct timeval tv1, tv2;\n";
 std::string CODE_GETTIME_1 = "gettimeofday(&tv1, NULL);\n";
-std::string CODE_START = "long start = (tv1.tv_sec*1000000 + tv1.tv_usec);\n";
+std::string CODE_START_TIME = "long start = (tv1.tv_sec*1000000 + tv1.tv_usec);\n";
 std::string CODE_GETTIME_2 = "gettimeofday(&tv2, NULL);\n";
-std::string CODE_END = "long end = (tv2.tv_sec*1000000 + tv2.tv_usec);\n";
+std::string CODE_END_TIME = "long end = (tv2.tv_sec*1000000 + tv2.tv_usec);\n";
 std::string CODE_DIST = "#pragma omp target teams distribute";
 std::string CODE_ENTER_DATA = "#pragma omp target enter data";
 std::string CODE_EXIT_DATA = "\n#pragma omp target exit data";
@@ -32,8 +32,9 @@ const char* schedule[3] = {"static", "dynamic", "guided"};
 
 OMPAdvisorASTConsumer::OMPAdvisorASTConsumer(CompilerInstance *CI) {
   visitor = new OMPAdvisorVisitor(CI);
+  astContext = &(CI->getASTContext());
   ci = CI;
-  SM = &(CI->getASTContext().getSourceManager());
+  SM = &(astContext->getSourceManager());
   for(int i=0; i<84; i++) {
     rewriter[i].setSourceMgr(*SM, CI->getASTContext().getLangOpts());
   }
@@ -60,8 +61,10 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 
   string filename = basename(SM->getFilename(SM->getLocForStartOfFile(SM->getMainFileID())).str());
   llvm::outs() << "Filename = " << filename << "\n";
-  size_t lastindex = filename.find_last_of(".");
-  string directory_name = filename.substr(0, lastindex) + "_variants";
+  string directory = SM->getFileEntryForID(SM->getMainFileID())->tryGetRealPathName().str();
+  llvm::outs() << "Directory= " << directory << "\n";
+  size_t lastindex = directory.find_last_of(".");
+  string directory_name = directory.substr(0, lastindex) + "_variants";
   if(!llvm::sys::fs::exists(directory_name)) {
     llvm::sys::fs::create_directories(directory_name);
   } else {
@@ -78,8 +81,6 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
     if(k->getCodeLocation(5).isValid()) num_par++;
     int rID = 0;
     string newFile = directory_name + "/" + filename.substr(0, lastindex);
-  //  for(int num_par=1; num_par<=4; num_par++) {
-  //  for(int num_par=1; num_par<=1; num_par++) {
     for(int parallel=2; parallel<=num_par+1; parallel++) {
       int max = (parallel==2) ? 1 : (parallel-2);
       for(int dist_col=1; dist_col<=max; dist_col++) {
@@ -92,15 +93,120 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
         }
       }
     }
-   // }                                             
   }
 
   llvm::outs() << "\n\nModified File:\n";
   llvm::outs() << "******************************\n";
   rewriter[0].getEditBuffer(SM->getMainFileID()).write(llvm::outs());
   llvm::outs() << "******************************\n";
-  rewriter[1].getEditBuffer(SM->getMainFileID()).write(llvm::outs());
-  llvm::outs() << "******************************\n";
+}
+
+string OMPAdvisorASTConsumer::getArraySize(OMPArraySectionExpr *array, string &size) {
+  Expr::EvalResult result;
+  int lower = 0, length = 0, stride = 0;
+  Expr *temp;
+  temp = array->getLowerBound();
+  if(temp) {
+    temp->EvaluateAsInt(result, *astContext);
+    if(result.Val.isInt()) {
+      lower = result.Val.getInt().getLimitedValue();
+    }
+  }
+  temp = array->getLength();
+  if(temp) {
+    temp->EvaluateAsInt(result, *astContext);
+    if(result.Val.isInt()) {
+      length = result.Val.getInt().getLimitedValue();
+    }
+  }
+  size += "[" + std::to_string(lower) + ":" + std::to_string(length);
+  temp = array->getStride();
+  if(temp) {
+    temp->EvaluateAsInt(result, *astContext);
+    if(result.Val.isInt()) {
+      stride = result.Val.getInt().getLimitedValue();
+      size += ":" + std::to_string(stride);
+    }
+  }
+  size += "]";
+
+  Expr *exp = array->getBase();
+  string varName = "";
+  if(auto array1 = dyn_cast<OMPArraySectionExpr>(exp)) {
+    varName = getArraySize(array1, size);
+  } else if(auto impl = dyn_cast<ImplicitCastExpr>(exp)) {
+    DeclRefExpr *ref = dyn_cast<DeclRefExpr>(impl->getSubExpr());
+    varName = ref->getDecl()->getNameAsString();
+//    llvm::errs() << "Variable = " << varName << "\n";
+  }
+
+  return varName;
+}
+
+string OMPAdvisorASTConsumer::getEnterDataString(Kernel *k) {
+  string enterData = "";
+  OMPTargetDirective *omp = dyn_cast<OMPTargetDirective>(k->getStmt());
+  if(omp->hasClausesOfKind<OMPMapClause>()) {
+    enterData = "map(to: ";
+    int numClauses = omp->getNumClauses();
+    for(int i=0; i<numClauses; i++) {
+      OMPClause *c = omp->getClause(i);
+      if(dyn_cast<OMPMapClause>(c)) {
+        OMPMapClause *map = dyn_cast<OMPMapClause>(c);
+        for(auto child1 : map->children()) {
+          if(child1) {
+            string size = "";
+            string varName = "";
+            if(auto array = dyn_cast<OMPArraySectionExpr>(child1)) {
+              varName = getArraySize(array, size);
+            } else if(dyn_cast<DeclRefExpr>(child1)) {
+              varName = dyn_cast<DeclRefExpr>(child1)->getDecl()->getNameAsString();
+            }
+            llvm::errs() << "*************" << varName << size << "\n";
+
+            if(enterData.back() != ' ') enterData += ", ";
+            enterData += varName + size;
+          }
+        }
+      }
+    }
+    enterData += ")";
+  }
+
+  return enterData;
+}
+
+string OMPAdvisorASTConsumer::getExitDataString(Kernel *k) {
+  string exitData = "";
+  OMPTargetDirective *omp = dyn_cast<OMPTargetDirective>(k->getStmt());
+  if(omp->hasClausesOfKind<OMPMapClause>()) {
+    exitData = "map(from: ";
+    int numClauses = omp->getNumClauses();
+    for(int i=0; i<numClauses; i++) {
+      OMPClause *c = omp->getClause(i);
+      if(dyn_cast<OMPMapClause>(c)) {
+        OMPMapClause *map = dyn_cast<OMPMapClause>(c);
+        for(auto child1 : map->children()) {
+          if(child1) {
+            string size = "";
+            string varName = "";
+            if(auto array = dyn_cast<OMPArraySectionExpr>(child1)) {
+              varName = getArraySize(array, size);
+            } else if(dyn_cast<DeclRefExpr>(child1)) {
+              varName = dyn_cast<DeclRefExpr>(child1)->getDecl()->getNameAsString();
+            }
+            llvm::errs() << "*************" << varName << size << "\n";
+
+            if(exitData.back() != ' ') exitData += ", ";
+            exitData += varName + size;
+          }
+        }
+      }
+    }
+    exitData += ")";
+  }
+
+  return exitData;
 }
 
 void OMPAdvisorASTConsumer::codeGen(string fileName, Kernel *k, int rID, int num_par, int par_pos, int dist_col, int par_col, int sched, int data) {
@@ -110,17 +216,17 @@ void OMPAdvisorASTConsumer::codeGen(string fileName, Kernel *k, int rID, int num
 
   string code0;
   string code1;
-  if(data == 0) {
-    code0 = CODE_DEC_TIMEVAL + CODE_GETTIME_1 + CODE_START;
-    code1 = CODE_ENTER_DATA + " map(alloc: A[0:N][0:N])\n";
-  } else {
-    code0 = CODE_ENTER_DATA + " map(alloc: A[0:N][0:N])\n";
-    code1 = CODE_DEC_TIMEVAL + CODE_GETTIME_1 + CODE_START;
-  }
-  string code2 = CODE_DIST;
+  string code2;
   string code3 = "";
   string code4 = "";
   string code5 = "";
+  string code6;
+  string code7;
+
+  code0 = CODE_ENTER_DATA + " " + getEnterDataString(k) + "\n";
+  code1 = CODE_DEC_TIMEVAL + CODE_GETTIME_1 + CODE_START_TIME;
+
+  code2 = CODE_DIST;
   if(dist_col > 1) code2 += " collapse(" + std::to_string(dist_col) + ")";
   if(par_pos == 2) {
     code2 += " parallel for";
@@ -128,39 +234,42 @@ void OMPAdvisorASTConsumer::codeGen(string fileName, Kernel *k, int rID, int num
     if(sched > 0) code2 += " schedule(" + string(schedule[sched]) + ")";
   }
   code2 += "\n";
+
   if(par_pos == 3) {
-    code3 += CODE_PARALLEL_FOR;
+    code3 = CODE_PARALLEL_FOR;
     if(par_col > 1) code3 += " collapse(" + std::to_string(par_col) + ")";
     if(sched > 0) code3 += " schedule(" + string(schedule[sched]) + ")";
     code3 += "\n";
   }
   if(par_pos == 4) {
-    code4 += CODE_PARALLEL_FOR;
+    code4 = CODE_PARALLEL_FOR;
     if(par_col > 1) code4 += " collapse(" + std::to_string(par_col) + ")";
     if(sched > 0) code4 += " schedule(" + string(schedule[sched]) + ")";
     code4 += "\n";
   }
   if(par_pos == 5) {
-    code5 += CODE_PARALLEL_FOR;
+    code5 = CODE_PARALLEL_FOR;
     if(par_col > 1) code5 += " collapse(" + std::to_string(par_col) + ")";
     if(sched > 0) code5 += " schedule(" + string(schedule[sched]) + ")";
     code5 += "\n";
   }
 
-  string code6 = CODE_EXIT_DATA + " map(from: A[0:N][0:N])\n";
-  string code7 = CODE_GETTIME_2;
-  code7 += CODE_END;
-  code7 += "printf(\"";
-  code7 += k->getFunction()->getNameInfo().getAsString();
-  code7 += "_parPos" + std::to_string(par_pos);  
-  code7 += "_distCol" + std::to_string(dist_col);  
-  code7 += "_parCol" + std::to_string(par_col);  
-  code7 += "_" + string(schedule[sched]);
-  code7 += ",%ld\\n\",  (end - start));\n";
+  code6 = CODE_GETTIME_2;
+  code6 += CODE_END_TIME;
+  code6 += "printf(\"";
+  code6 += k->getFunction()->getNameInfo().getAsString();
+  code6 += "_parPos" + std::to_string(par_pos);
+  code6 += "_distCol" + std::to_string(dist_col);
+  code6 += "_parCol" + std::to_string(par_col);
+  code6 += "_" + string(schedule[sched]);
+  code6 += (data==1 ? "_memcpy" : "" );
+  code6 += ",%ld\\n\",  (end - start));\n";
+
+  code7 = CODE_EXIT_DATA + " " + getExitDataString(k) + "\n";
+
   if(data == 1) {
-    string temp = code6;
-    code6 = code7;
-    code7 = temp;
+    code0.swap(code1);
+    code6.swap(code7);
   }
 
   rewriter[rID].RemoveText(k->getStmt()->getSourceRange());
