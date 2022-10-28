@@ -1,4 +1,5 @@
-for i in `ls | grep -v omp_gpu | grep -v .sh | grep -v .csv` 
+#for i in `ls | grep -v omp_gpu | grep -v .sh | grep -v .csv` 
+for i in `ls -d */`
 do 
    cd $i;
   echo -ne "$i,";
