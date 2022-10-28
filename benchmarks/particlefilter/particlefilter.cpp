@@ -335,7 +335,7 @@ void particleFilter(int *I, int IszX, int IszY, int Nfr, int * seed, FILE *fp)
 
   //CPU execution
   particlefilter_kernel1(weights, arrayX, arrayY, xe, ye, fp);
-  for(int k = 1; k < 1/*Nfr*/; k++) {
+  for(int k = 1; k < Nfr; k++) {
     init(arrayX, arrayY, weights, I, seed, countOnes, objxy, IszX, IszY, Nfr, k);
     double sumWeights = particlefilter_kernel2(weights, fp);
     particlefilter_kernel3(weights, sumWeights, fp);

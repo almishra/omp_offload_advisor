@@ -2,6 +2,19 @@
 
 int main(int argc, char **argv)
 {
+  std::string output_file_name;
+  if(argc > 1) {
+    output_file_name = argv[1];
+  } else {
+    output_file_name = argv[0];
+    output_file_name = output_file_name.substr(output_file_name.find_last_of("/\\")+1);
+    output_file_name = output_file_name.substr(0, output_file_name.size() - 3);
+    output_file_name = "output_" + output_file_name + "csv";
+  }
+
+  printf("%s\n", output_file_name.c_str());
+  FILE *fp = fopen(output_file_name.c_str(), "w");
+
   float (*matA)[LB][LC][LD][LE][M][N] =
     (float (*)[LB][LC][LD][LE][M][N]) malloc(sizeof(float)*LA*LB*LC*LD*LE*M*N);
   float (*vecB)[LB][LC][LD][LE][N] =
@@ -31,7 +44,7 @@ int main(int argc, char **argv)
             for(int n=0;n<N;n++)
                 vecB[a][b][c][d][e][n] = 2.5;
 
-  proxy_app_kernel(matA, vecB, vecC);
+  proxy_app_kernel(matA, vecB, vecC, fp);
 
   return 0;
 }

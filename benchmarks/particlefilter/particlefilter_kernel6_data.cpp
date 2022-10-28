@@ -4,8 +4,16 @@ void particlefilter_kernel6(double *CDF, double *u, double *arrayX,
                                 double *arrayY, double *xj, double *yj,
                                 FILE *fp)
 {
+  struct timeval  tv1, tv2;
+  long start, end;
+  gettimeofday(&tv1, NULL);
 #pragma omp target enter data map(alloc: xj[0:N], yj[0:N]) \
                               map(to: CDF[0:N], u[0:N], arrayX[0:N], arrayY[0:N])
+  gettimeofday(&tv2, NULL);
+  start = (long)(tv1.tv_sec * 1000000 + tv1.tv_usec);
+  end = (long)(tv2.tv_sec * 1000000 + tv2.tv_usec);
+  fprintf(fp, "particle_kernel6,enter,%ld,%ld\n", sizeof(double)*N*4,
+          (end-start));
 #pragma omp target teams distribute parallel for
   for(int i=0; i<N; i++) {
     int x = -1;
@@ -20,5 +28,11 @@ void particlefilter_kernel6(double *CDF, double *u, double *arrayX,
     xj[i] = arrayX[x];
     yj[i] = arrayY[x];
   }
+  gettimeofday(&tv1, NULL);
 #pragma omp target exit data map(from: xj[0:N], yj[0:N])
+  gettimeofday(&tv2, NULL);
+  start = (long)(tv1.tv_sec * 1000000 + tv1.tv_usec);
+  end = (long)(tv2.tv_sec * 1000000 + tv2.tv_usec);
+  fprintf(fp, "particle_kernel6,enter,%ld,%ld\n", sizeof(double)*N*2,
+          (end-start));
 }

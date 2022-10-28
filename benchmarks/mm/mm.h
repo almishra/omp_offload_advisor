@@ -19,6 +19,6 @@
 #define N3 300
 #endif
 
-void mm_kernel(double (*A)[N2], double (*B)[N3], double (*C)[N3]);
+void mm_kernel(double (*A)[N2], double (*B)[N3], double (*C)[N3], FILE *fp);
 
 #endif

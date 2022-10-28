@@ -32,4 +32,5 @@
 
 void proxy_app_kernel(float (*matrixA)[LB][LC][LD][LE][M][N],
                       float (*vectorB)[LB][LC][LD][LE][N], 
-                      float (*vectorC)[LB][LC][LD][N]);
+                      float (*vectorC)[LB][LC][LD][N],
+                      FILE *fp);

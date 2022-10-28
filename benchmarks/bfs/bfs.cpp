@@ -47,6 +47,7 @@ int main( int argc, char** argv)
 ////////////////////////////////////////////////////////////////////////////////
 int* CreateGraph(Node* graph_nodes, bool *graph_mask, bool *updating_graph_mask,
                  bool *graph_visited, int *cost, Graph *g) {
+  srand(0);
   g->source = 0;
 
   node * graph = new node[N];

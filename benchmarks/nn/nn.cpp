@@ -44,11 +44,11 @@ int main(int argc, char* argv[]) {
     neighbors[j].dist = OPEN;
   }
 
-  float z[REC_WINDOW];
+  double z[REC_WINDOW];
 
   // Create random records
-  float lat[REC_WINDOW];
-  float lon[REC_WINDOW];
+  double lat[REC_WINDOW];
+  double lon[REC_WINDOW];
   int year[REC_WINDOW];
   int month[REC_WINDOW];
   int date[REC_WINDOW];
@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
     hour[i] = hours[rand() % 4];
     num[i] = 1 + rand() % 28;
     name[i] = names[rand() % 42];
-    lat[i] = ((float)(7 + rand() % 63)) + ((float)rand() / (float)0x7fffffff);
-    lon[i] = ((float)(rand() % 358)) + ((float)rand() / (float)0x7fffffff);
+    lat[i] = ((double)(7 + rand() % 63)) + ((double)rand() / (double)0x7fffffff);
+    lon[i] = ((double)(rand() % 358)) + ((double)rand() / (double)0x7fffffff);
     speed[i] = 10 + rand() % 155;
     press[i] = rand() % 900;
   }
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
   nn_kernel(z, lat, lon, fp);
 
   for(int i = 0 ; i < REC_WINDOW ; i++ ) {
-    float max_dist = -1;
+    double max_dist = -1;
     int max_idx = 0;
     for(int j = 0 ; j < K ; j++ ) {
       if( neighbors[j].dist > max_dist ) {

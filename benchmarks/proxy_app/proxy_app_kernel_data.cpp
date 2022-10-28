@@ -3,11 +3,19 @@
 void proxy_app_kernel(
     float (*matrixA)[LB][LC][LD][LE][M][N],
     float (*vectorB)[LB][LC][LD][LE][N], 
-    float (*vectorC)[LB][LC][LD][N])
+    float (*vectorC)[LB][LC][LD][N], FILE *fp)
 {
+  struct timeval  tv1, tv2;
+  long start, end;
+  gettimeofday(&tv1, NULL);
 #pragma omp target enter data map(alloc: vectorC[0:LA][0:LB][0:LC][0:LD][0:N]) \
                               map(to: matrixA[0:LA][0:LB][0:LC][0:LD][0:LE][0:M][0:N]) \
                               map(to: vectorB[0:LA][0:LB][0:LC][0:LD][0:LE][0:N])
+  gettimeofday(&tv2, NULL);
+  start = (long)(tv1.tv_sec * 1000000 + tv1.tv_usec);
+  end = (long)(tv2.tv_sec * 1000000 + tv2.tv_usec);
+  fprintf(fp, "proxy_app_kernel_data,enter,%ld,%ld\n", sizeof(double)*(LA*LB*LC*LD*N*LE*(M+1)),
+      (end - start));
 #pragma omp target teams distribute parallel for collapse(4)
   for(int a=0; a<LA; a++) {
     for(int b=0; b<LB; b++) {
@@ -38,5 +46,11 @@ void proxy_app_kernel(
       } // end c loop
     } // end b loop
   } // end a loop
+  gettimeofday(&tv1, NULL);
 #pragma omp target exit data map(from: vectorC[0:LA][0:LB][0:LC][0:LD][0:N])
+  gettimeofday(&tv2, NULL);
+  start = (long)(tv1.tv_sec * 1000000 + tv1.tv_usec);
+  end = (long)(tv2.tv_sec * 1000000 + tv2.tv_usec);
+  fprintf(fp, "proxy_app_kernel_data,exit,%ld,%ld\n", sizeof(double)*(LA*LB*LC*LD*N),
+      (end - start));
 }

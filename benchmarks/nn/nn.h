@@ -29,6 +29,6 @@ struct neighbor {
 };
 
 long get_time();
-void nn_kernel(float *z, float *lat, float *lon, FILE *fp);
+void nn_kernel(double *z, double *lat, double *lon, FILE *fp);
 
 #endif

@@ -1,9 +1,9 @@
 #for i in `ls | grep -v omp_gpu | grep -v .sh | grep -v .csv` 
-for i in `ls -d */`
+for i in `ls -d */ | grep -v om_gpu`
 do 
-   cd $i;
+  cd $i;
   echo -ne "$i,";
-   make data > /dev/null
+  make data > /dev/null
   ./run_data.sh > /dev/null;
   mult=$(cat 1.csv | grep -A1 "\"Start\"" | tail -n1 | awk -F',' '{print $2}'); 
   mu=1000;
