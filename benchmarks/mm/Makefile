@@ -1,0 +1,24 @@
+# C++ compiler
+CXX = clang++
+CFLAGS = -Wall -O3 -fopenmp
+OFFLOAD_FLAGS = -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
+N=10000
+
+all:
+	@echo "Please run make for individual archs"
+	@echo "make -f Makefile.<arch>"
+
+data: test mm.cpp mm_kernel_data.cpp
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN1=$(N) -DN2=$(N) -DN3=$(N) -c mm.cpp -o mm_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN1=$(N) -DN2=$(N) -DN3=$(N) -c mm_kernel_data.cpp -o mm_kernel_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN1=$(N) -DN2=$(N) -DN3=$(N) mm_kernel_data_test.o mm_test.o -o mm_data_test.out
+	$(RM) *_test.o
+
+test: mm.cpp mm_kernel.cpp
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN1=$(N) -DN2=$(N) -DN3=$(N) -c mm.cpp -o mm_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN1=$(N) -DN2=$(N) -DN3=$(N) -c mm_kernel.cpp -o mm_kernel_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN1=$(N) -DN2=$(N) -DN3=$(N) mm_kernel_test.o mm_test.o -o mm_test.out
+	$(RM) *_test.o
+
+clean:
+	$(RM) *.o *.out
