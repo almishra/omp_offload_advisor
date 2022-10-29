@@ -2,7 +2,6 @@
 CXX = clang++
 CFLAGS = -Wall -O3 -fopenmp
 OFFLOAD_FLAGS = -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
-N=10000
 X=32
 Y=32
 Z=32

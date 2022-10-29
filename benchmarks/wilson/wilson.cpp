@@ -716,7 +716,7 @@ int main(int argc, char **argv)
 //  long mem_to;
 //  long mem_from;
 
-  fprintf(fp, "kernel,Data Transferred (B),Data Transfer time (us)\n");
+//  fprintf(fp, "kernel,Data Transferred (B),Data Transfer time (us)\n");
   int cb = 0;
 
 //  double (*frm_md_out)[LZ][LY][LX/2][4][3][2] =
@@ -770,11 +770,11 @@ int main(int argc, char **argv)
     }
   }
 
-#pragma omp target enter data \
-  map(alloc:frm_md_out_off[0:LT][0:LZ][0:LY][0:LX/2][0:4][0:3][0:2]) \
-  map(to:g_md_field[0:2][0:LT+1][0:LZ+1][0:LY+1][0:LX/2+1][0:4][0:3][0:3][0:2]) \
-  map(to:frm_md_in[0:LT+2][0:LZ+2][0:LY+2][0:LX/2+2][0:4][0:3][0:2])
-  {}
+//#pragma omp target enter data \
+//  map(alloc:frm_md_out_off[0:LT][0:LZ][0:LY][0:LX/2][0:4][0:3][0:2]) \
+//  map(to:g_md_field[0:2][0:LT+1][0:LZ+1][0:LY+1][0:LX/2+1][0:4][0:3][0:3][0:2]) \
+//  map(to:frm_md_in[0:LT+2][0:LZ+2][0:LY+2][0:LX/2+2][0:4][0:3][0:2])
+//  {}
 
 //  mem_to = sizeof(float)*2*(LT+1)*(LZ+1)*(LY+1)*(LX/2+1)*4*3*3*2 +
 //    sizeof(float)*(LT+2)*(LZ+2)*(LY+2)*(LX/2+2)*4*3*2;
