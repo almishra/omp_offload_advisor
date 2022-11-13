@@ -1,7 +1,7 @@
 #ifndef _OMP_ADVISOR_H_
 #define _OMP_ADVISOR_H_
 
-#define DEBUG true
+#define DEBUG false
 
 class Loop {
     const int id;
@@ -178,7 +178,6 @@ public:
     bool operator< (const Kernel& k) const;
     bool operator> (const Kernel& k) const;
 };
-
 
 /************************************************************/
 class OMPAdvisorVisitor : public clang::RecursiveASTVisitor<OMPAdvisorVisitor> {

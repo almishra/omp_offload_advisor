@@ -101,7 +101,7 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
   //st->dumpColor();
   bool found = kernel_found<OMPTargetDirective>(st);
   if(found) {
-    st->dumpColor();
+//    st->dumpColor();
     int id = lastKernel ? lastKernel->getID() + 1 : 1;
     lastKernel = new Kernel(id, st, currentFunction); 
     llvm::errs().changeColor(raw_ostream::GREEN);
@@ -113,46 +113,6 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
     lastKernel->setCodeLocation(1, st->getBeginLoc());
 
     lastKernel->setEndLoc(dyn_cast<OMPTargetDirective>(st)->getInnermostCapturedStmt()->getEndLoc());
-
-/*    OMPTargetDirective *omp = dyn_cast<OMPTargetDirective>(st);
-    if(omp->hasClausesOfKind<OMPMapClause>()) {
-      //auto mapClauses = omp->getClausesOfKind(OMPMapClause);
-      int numClauses = omp->getNumClauses();
-      for(int i=0; i<numClauses; i++) {
-        OMPClause *c = omp->getClause(i);
-        if(dyn_cast<OMPMapClause>(c)) {
-          OMPMapClause *map = dyn_cast<OMPMapClause>(c);
-          for(auto child1 : map->children()) {
-            if(child1) {
-              child1->dump();
-              if(dyn_cast<OMPArraySectionExpr>(child1)) {
-                OMPArraySectionExpr *array1 = dyn_cast<OMPArraySectionExpr>(child1);
-                array1->getBase()->dump();
-                array1->getLowerBound()->dump();
-                array1->getLength()->dump();
-                array1->getStride()->dump();
-                Expr *exp1 = array1->getBase();
-                if(exp1) {
-                  if(auto array2 = dyn_cast<OMPArraySectionExpr>(exp1)) {
-                    Expr *exp2 = array2->getBase();
-                    exp2->dump();
-                  } else if(auto impl = dyn_cast<ImplicitCastExpr>(exp1)) {
-                    DeclRefExpr *ref = dyn_cast<DeclRefExpr>(impl->getSubExpr());
-                    string name = ref->getDecl()->getNameAsString();
-                    llvm::errs() << "Variable = " << name << "\n";
-                  }
-                }
-                llvm::errs() << "-------------\n";
-              } else if(dyn_cast<DeclRefExpr>(child1)) {
-                string name = dyn_cast<DeclRefExpr>(child1)->getDecl()->getNameAsString();
-                llvm::errs() << "Variable = " << name << "\n";
-              }
-              llvm::errs() << "*************\n";
-            }
-          }
-        }
-      }
-    }*/
 
     if(insideLoop) {
         lastKernel->setInLoop(true);
@@ -166,18 +126,25 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
     return true;
   }
 
-  if(dyn_cast<ForStmt>(st) || dyn_cast<WhileStmt>(st)) {
+  if(dyn_cast<ForStmt>(st)) {
     if(isWithin(st->getBeginLoc())) {
       int x = SM->getSpellingColumnNumber(st->getBeginLoc());
       if(lastKernel->getCodeLocation(2).isInvalid()) {
-        lastKernel->setCodeLocation(2, st->getBeginLoc().getLocWithOffset(1-x));
+        lastKernel->setCodeLocation(2, st->getBeginLoc().getLocWithOffset(1-x));          // For Loop 1
         lastKernel->setCodeLocation(6, st->getEndLoc());
-      } else if(lastKernel->getCodeLocation(3).isInvalid()) {
-        lastKernel->setCodeLocation(3, st->getBeginLoc().getLocWithOffset(1-x));
-      } else if(lastKernel->getCodeLocation(4).isInvalid()) {
-        lastKernel->setCodeLocation(4, st->getBeginLoc().getLocWithOffset(1-x));
-      } else if(lastKernel->getCodeLocation(5).isInvalid()) {
-        lastKernel->setCodeLocation(5, st->getBeginLoc().getLocWithOffset(1-x));
+        ForStmt *forStmt = dyn_cast<ForStmt>(st);
+        if(dyn_cast<ForStmt>(dyn_cast<CompoundStmt>(forStmt->getBody())->body_front())) {
+          ForStmt *forStmt2 = dyn_cast<ForStmt>(dyn_cast<CompoundStmt>(forStmt->getBody())->body_front());
+          lastKernel->setCodeLocation(3, forStmt2->getBeginLoc().getLocWithOffset(1-x));   // For Loop 2
+          if(dyn_cast<ForStmt>(dyn_cast<CompoundStmt>(forStmt2->getBody())->body_front())) {
+            ForStmt *forStmt3 = dyn_cast<ForStmt>(dyn_cast<CompoundStmt>(forStmt2->getBody())->body_front());
+            lastKernel->setCodeLocation(4, forStmt3->getBeginLoc().getLocWithOffset(1-x));   // For Loop 3
+            if(dyn_cast<ForStmt>(dyn_cast<CompoundStmt>(forStmt3->getBody())->body_front())) {
+              ForStmt *forStmt4 = dyn_cast<ForStmt>(dyn_cast<CompoundStmt>(forStmt3->getBody())->body_front());
+              lastKernel->setCodeLocation(5, forStmt4->getBeginLoc().getLocWithOffset(1-x));   // For Loop 4
+            }
+          }
+        }
       }
     }
     int loopID = lastLoop ? lastLoop->getID() + 1 : 1;
@@ -217,7 +184,7 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
     if(b->isAssignmentOp()) {
       if(DEBUG) {
         llvm::errs() << b->getOpcodeStr() << " ";
-        b->getOperatorLoc().dump(*SM);
+        //b->getOperatorLoc().dump(*SM);
       }
       if(isWithin(b->getBeginLoc())) {
         ValueDecl *v = getLeftmostNode(st);
@@ -239,7 +206,7 @@ bool OMPAdvisorVisitor::VisitStmt(Stmt *st) {
       if(DEBUG) {
         llvm::errs() << UnaryOperator::getOpcodeStr(u->getOpcode());
         llvm::errs() <<" u ";
-        u->getOperatorLoc().dump(*SM);
+        //u->getOperatorLoc().dump(*SM);
       }
       if(isWithin(u->getBeginLoc())) {
         ValueDecl *v = getLeftmostNode(st);

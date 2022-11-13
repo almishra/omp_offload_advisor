@@ -38,16 +38,12 @@ OMPAdvisorASTConsumer::OMPAdvisorASTConsumer(CompilerInstance *CI) {
   for(int i=0; i<84; i++) {
     rewriter[i].setSourceMgr(*SM, CI->getASTContext().getLangOpts());
   }
-  llvm::outs() << "Original File:\n";
-  llvm::outs() << "******************************\n";
-  rewriter[0].getEditBuffer(SM->getMainFileID()).write(llvm::outs());
-  llvm::outs() << "******************************\n";
 }
 
 string OMPAdvisorASTConsumer::basename(string path) {                    
   return string(find_if(path.rbegin(), path.rend(),
                 MatchPathSeparator()).base(), path.end());                      
-} 
+}
 
 void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   llvm::outs() << "******************************\n";
@@ -55,16 +51,16 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
   llvm::outs() << "******************************\n";
   visitor->TraverseDecl(Context.getTranslationUnitDecl());
   kernel_map = visitor->getKernelMap();
-  loop_map  = visitor->getLoopMap();
-  getKernelInfo();
-  getLoopInfo();
+//  loop_map  = visitor->getLoopMap();
+//  getKernelInfo();
+//  getLoopInfo();
 
   string filename = basename(SM->getFilename(SM->getLocForStartOfFile(SM->getMainFileID())).str());
   llvm::outs() << "Filename = " << filename << "\n";
   string directory = SM->getFileEntryForID(SM->getMainFileID())->tryGetRealPathName().str();
-  llvm::outs() << "Directory= " << directory << "\n";
   size_t lastindex = directory.find_last_of(".");
   string directory_name = directory.substr(0, lastindex) + "_variants";
+  llvm::outs() << "Directory= " << directory << "\n";
   if(!llvm::sys::fs::exists(directory_name)) {
     llvm::sys::fs::create_directories(directory_name);
   } else {
@@ -79,7 +75,9 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
     if(k->getCodeLocation(3).isValid()) num_par++;
     if(k->getCodeLocation(4).isValid()) num_par++;
     if(k->getCodeLocation(5).isValid()) num_par++;
+
     int rID = 0;
+    lastindex = filename.find_last_of(".");
     string newFile = directory_name + "/" + filename.substr(0, lastindex);
     for(int parallel=2; parallel<=num_par+1; parallel++) {
       int max = (parallel==2) ? 1 : (parallel-2);
@@ -94,11 +92,6 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
       }
     }
   }
-
-  llvm::outs() << "\n\nModified File:\n";
-  llvm::outs() << "******************************\n";
-  rewriter[0].getEditBuffer(SM->getMainFileID()).write(llvm::outs());
-  llvm::outs() << "******************************\n";
 }
 
 string OMPAdvisorASTConsumer::getArraySize(OMPArraySectionExpr *array, string &size) {
@@ -119,16 +112,17 @@ string OMPAdvisorASTConsumer::getArraySize(OMPArraySectionExpr *array, string &s
       length = result.Val.getInt().getLimitedValue();
     }
   }
-  size += "[" + std::to_string(lower) + ":" + std::to_string(length);
+  string curSize = "[" + std::to_string(lower) + ":" + std::to_string(length);
   temp = array->getStride();
   if(temp) {
     temp->EvaluateAsInt(result, *astContext);
     if(result.Val.isInt()) {
       stride = result.Val.getInt().getLimitedValue();
-      size += ":" + std::to_string(stride);
+      curSize += ":" + std::to_string(stride);
     }
   }
-  size += "]";
+  curSize += "]";
+  size = curSize + size;
 
   Expr *exp = array->getBase();
   string varName = "";
@@ -137,7 +131,6 @@ string OMPAdvisorASTConsumer::getArraySize(OMPArraySectionExpr *array, string &s
   } else if(auto impl = dyn_cast<ImplicitCastExpr>(exp)) {
     DeclRefExpr *ref = dyn_cast<DeclRefExpr>(impl->getSubExpr());
     varName = ref->getDecl()->getNameAsString();
-//    llvm::errs() << "Variable = " << varName << "\n";
   }
 
   return varName;
@@ -162,7 +155,6 @@ string OMPAdvisorASTConsumer::getEnterDataString(Kernel *k) {
             } else if(dyn_cast<DeclRefExpr>(child1)) {
               varName = dyn_cast<DeclRefExpr>(child1)->getDecl()->getNameAsString();
             }
-            llvm::errs() << "*************" << varName << size << "\n";
 
             if(enterData.back() != ' ') enterData += ", ";
             enterData += varName + size;
@@ -195,7 +187,6 @@ string OMPAdvisorASTConsumer::getExitDataString(Kernel *k) {
             } else if(dyn_cast<DeclRefExpr>(child1)) {
               varName = dyn_cast<DeclRefExpr>(child1)->getDecl()->getNameAsString();
             }
-            llvm::errs() << "*************" << varName << size << "\n";
 
             if(exitData.back() != ' ') exitData += ", ";
             exitData += varName + size;
@@ -256,7 +247,7 @@ void OMPAdvisorASTConsumer::codeGen(string fileName, Kernel *k, int rID, int num
 
   code6 = CODE_GETTIME_2;
   code6 += CODE_END_TIME;
-  code6 += "printf(\"";
+  code6 += "fprintf(fp,\"";
   code6 += k->getFunction()->getNameInfo().getAsString();
   code6 += "_parPos" + std::to_string(par_pos);
   code6 += "_distCol" + std::to_string(dist_col);
@@ -302,126 +293,3 @@ void OMPAdvisorASTConsumer::codeGen(string fileName, Kernel *k, int rID, int num
   outFile.close();
   system(("clang-format -i " + fileName).c_str());
 }
-
-void OMPAdvisorASTConsumer::getKernelInfo() {
-  llvm::errs() << "Kernel Data Information\n";
-  llvm::errs() << "Total " << kernel_map.size() << " kernels:\n";
-  for(auto m = kernel_map.begin(); m != kernel_map.end(); m++) {
-//    int id = m->first;
-    Kernel *k = m->second.at(0);
-    llvm::errs() << "Kernel #" << k->getID() << "\n";
-    llvm::errs() << " Function: " << k->getFunction()->getNameAsString();
-    llvm::errs() << "\n Location: ";
-    k->getStmt()->getBeginLoc().print(llvm::errs(), *SM); 
-    llvm::errs() << "\n In Loop: ";
-    if(k->isInLoop()) {
-      llvm::errs() << "Yes ";
-      k->getLoop()->getStartLoc().print(llvm::errs(), *SM);
-    } else {
-      llvm::errs() << "No";
-    }
-    llvm::errs() << "\n";
-    llvm::errs() << " Data used\n";
-    if(k->getPrivate().size()) llvm::errs() << "  private:\n";
-    for(VarDecl *v : k->getPrivate()) {
-      llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(k->getValIn().size()) llvm::errs() << "  to:\n";
-    for(ValueDecl *v : k->getValIn()) {
-      llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(k->getValOut().size()) llvm::errs() << "  from:\n";
-    for(ValueDecl *v : k->getValOut()) {
-        llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(k->getValInOut().size()) llvm::errs() << "  tofrom:\n";
-    for(ValueDecl *v : k->getValInOut()) {
-        llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(k->getSharedValIn().size()) llvm::errs() << "  shared to:\n";
-    for(ValueDecl *v : k->getSharedValIn()) {
-        llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(k->getSharedValOut().size()) llvm::errs() << "  shared from:\n";
-    for(ValueDecl *v : k->getSharedValOut()) {
-        llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(k->getSharedValInOut().size()) llvm::errs() << "  shared tofrom:\n";
-    for(ValueDecl *v : k->getSharedValInOut()) {
-        llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    llvm::errs() << "\n";
-
-/*    rewriter[0].RemoveText(k->getStmt()->getSourceRange());
-    rewriter[0].InsertTextAfterToken(k->getCodeLocation(6), "\n// Position 6 for target exit data map\n");
-    if(k->getCodeLocation(5).isValid())
-      rewriter[0].InsertTextBefore(k->getCodeLocation(5), "// Position 5 for parallel for\n");
-    if(k->getCodeLocation(4).isValid())
-      rewriter[0].InsertTextBefore(k->getCodeLocation(4), "// Position 4 for parallel for\n");
-    if(k->getCodeLocation(3).isValid())
-      rewriter[0].InsertTextBefore(k->getCodeLocation(3), "// Position 3 for parallel for\n");
-    if(k->getCodeLocation(2).isValid())
-      rewriter[0].InsertTextBefore(k->getCodeLocation(2), "// Position 2 for target teams distribute\n");
-    rewriter[0].InsertTextBefore(k->getCodeLocation(1), "// Position 1 for target enter data map\n");
-    rewriter[0].InsertTextBefore(k->getCodeLocation(0), "// Position 0 for comment\n");
-*/
-  }
-}
-
-void OMPAdvisorASTConsumer::getLoopInfo() {
-  llvm::errs() << "Loop Information\n";
-  for(auto m : kernel_map) {
-    Kernel *k = m.second.at(0);
-    if(k->isInLoop()) {
-      m.second.push_back(k);                                              
-      k->setLink(k->getID());                                             
-      k->setStartLoc(k->getLoop()->getStartLoc());                        
-      k->setEndLoc(k->getLoop()->getEndLoc());
-    } else {
-      k->setStartLoc(k->getStmt()->getBeginLoc());
-      OMPExecutableDirective *Dir =
-                      dyn_cast<OMPExecutableDirective>(k->getStmt());
-      CapturedStmt *cs;
-      for(auto c : Dir->children()) {
-        cs = dyn_cast<CapturedStmt>(c);
-        break;
-      }
-      k->setEndLoc(cs->getEndLoc());
-    }
-
-    llvm::errs() << "Kernel #" << k->getID();                               
-    if(k->isInLoop()) llvm::errs() << "  -- In Loop";
-    llvm::errs() << "\nStart: ";
-    k->getStartLoc().print(llvm::errs(), *SM);
-    llvm::errs() << "\nEnd  : ";
-    k->getEndLoc().print(llvm::errs(), *SM);
-    llvm::errs() << "\n";
-    llvm::errs() << "\n";
-  }
-  llvm::errs() << "********************************\n";
-  for(auto m : loop_map) {
-    Loop *l = m.second.at(0);
-    llvm::errs() << "Loop ID: " << l->getID() << " - ";
-    for(int id : l->getKernels()) {
-      llvm::errs() << id << ",";
-    }
-    llvm::errs() << "\nStart Loc: ";
-    l->getStartLoc().print(llvm::errs(), *SM);
-    llvm::errs() << "\nEnd Loc: ";
-    l->getEndLoc().print(llvm::errs(), *SM);
-    llvm::errs() << "\n";
-    if(l->getValIn().size()) llvm::errs() << "  to:\n";
-    for(ValueDecl *v : l->getValIn()) {
-      llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(l->getValOut().size()) llvm::errs() << "  from:\n";
-    for(ValueDecl *v : l->getValOut()) {
-      llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-    if(l->getValInOut().size()) llvm::errs() << "  tofrom:\n";
-    for(ValueDecl *v : l->getValInOut()) {
-      llvm::errs() << "   |-  " << v->getNameAsString() << "\n";
-    }
-  }
-}
-
