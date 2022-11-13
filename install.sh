@@ -223,16 +223,26 @@ else
     git clone -b release/14.x --depth 1 https://github.com/llvm/llvm-project.git $LLVM_SRC > $MAIN_DIR/.llvm_clone_log 2> $MAIN_DIR/.llvm_clone_error
     ASSERT $? "==== Error in cloning llvm"
 
-    # Copy the InstructionCount project to clang example directory
+    # Copy the OMPAdvisor project to clang example directory
     cp -r $MAIN_DIR/OMPAdvisor $LLVM_SRC/clang/examples/OMPAdvisor
     echo "add_subdirectory(OMPAdvisor)" >> $LLVM_SRC/clang/examples/CMakeLists.txt
-    echo
+    # Copy the InstructionCount project to clang example directory
+    cp -r $MAIN_DIR/InstructionCount $LLVM_SRC/clang/examples/InstructionCount
+    echo "add_subdirectory(InstructionCount)" >> $LLVM_SRC/clang/examples/CMakeLists.txt
   else
     printf "LLVM already exists\n"
+
+    printf "Copying files for OMPAdvisor\n"
     # Copy the OMPAdvisor project to clang example directory
     cp -r $MAIN_DIR/OMPAdvisor/CMakeLists.txt $LLVM_SRC/clang/examples/OMPAdvisor/
     cp -r $MAIN_DIR/OMPAdvisor/*.cpp $LLVM_SRC/clang/examples/OMPAdvisor/
     cp -r $MAIN_DIR/OMPAdvisor/*.h $LLVM_SRC/clang/examples/OMPAdvisor/
+
+    printf "Copying files for InstructionCount\n"
+    # Copy the InstructionCount project to clang example directory
+    cp -r $MAIN_DIR/InstructionCount $LLVM_SRC/clang/examples/InstructionCount/
+    cp -r $MAIN_DIR/InstructionCount/*.cpp $LLVM_SRC/clang/examples/InstructionCount/
+    cp -r $MAIN_DIR/InstructionCount/*.h $LLVM_SRC/clang/examples/InstructionCount/
   fi
 fi
 
