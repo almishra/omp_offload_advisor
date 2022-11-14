@@ -1,0 +1,8 @@
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DREC_WINDOW=10000000 -c nn.cpp -o nn_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DREC_WINDOW=10000000 -c nn_kernel.cpp -o nn_kernel_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DREC_WINDOW=10000000 -lm nn_kernel_test.o nn_test.o -o nn_test_rtx.out
+rm -f *_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DREC_WINDOW=10000000 -c nn.cpp -o nn_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DREC_WINDOW=10000000 -c nn_kernel_data.cpp -o nn_kernel_data_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DREC_WINDOW=10000000 -lm nn_kernel_data_test.o nn_test.o -o nn_data_test_rtx.out
+rm -f *_test.o

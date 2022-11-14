@@ -1,0 +1,8 @@
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DLA=32 -DLB=32 -DLC=32 -DLD=32 -DLE=64 -c proxy_app.cpp -o proxy_app_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DLA=32 -DLB=32 -DLC=32 -DLD=32 -DLE=64 -c proxy_app_kernel.cpp -o proxy_app_kernel_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DLA=32 -DLB=32 -DLC=32 -DLD=32 -DLE=64 proxy_app_kernel_test.o proxy_app_test.o -o proxy_app_test_rtx.out
+rm -f *_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DLA=32 -DLB=32 -DLC=32 -DLD=32 -DLE=64 -c proxy_app.cpp -o proxy_app_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DLA=32 -DLB=32 -DLC=32 -DLD=32 -DLE=64 -c proxy_app_kernel_data.cpp -o proxy_app_kernel_data_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DLA=32 -DLB=32 -DLC=32 -DLD=32 -DLE=64 proxy_app_kernel_data_test.o proxy_app_test.o -o proxy_app_data_test_rtx.out
+rm -f *_test.o

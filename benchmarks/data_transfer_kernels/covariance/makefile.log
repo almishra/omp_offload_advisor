@@ -1,0 +1,10 @@
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 -c covariance.cpp -o covariance_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 -c covariance_kernel1.cpp -o covariance_kernel1_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 -c covariance_kernel2.cpp -o covariance_kernel2_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 covariance_kernel?_test.o covariance_test.o -o covariance_test_rtx.out
+rm -f covariance*_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 -c covariance.cpp -o covariance_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 -c covariance_kernel1_data.cpp -o covariance_kernel1_data_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 -c covariance_kernel2_data.cpp -o covariance_kernel2_data_test.o
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=10000000 covariance_kernel?_data_test.o covariance_test.o -o covariance_data_test_rtx.out
+rm -f covariance*_test.o

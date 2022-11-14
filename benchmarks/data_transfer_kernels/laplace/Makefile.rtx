@@ -1,0 +1,27 @@
+# C++ compiler
+CXX = clang++
+CFLAGS = -Wall -O3 -fopenmp
+OFFLOAD_FLAGS = -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75
+M=10000
+N=10000
+
+all:
+	@echo "Please run make for individual archs"
+	@echo "make -f Makefile.<arch>"
+
+data: test
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) -c laplace.cpp -o laplace_test.o; \
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) -c laplace_kernel1_data.cpp -o laplace_kernel1_data_test.o; \
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) -c laplace_kernel2_data.cpp -o laplace_kernel2_data_test.o; \
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) laplace_kernel1_data_test.o laplace_kernel2_data_test.o laplace_test.o -o laplace_data_test_rtx.out; \
+	$(RM) laplace_kernel*_data_test.o laplace_test.o;
+
+test:
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) -c laplace.cpp -o laplace_test.o; \
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) -c laplace_kernel1.cpp -o laplace_kernel1_test.o; \
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) -c laplace_kernel2.cpp -o laplace_kernel2_test.o; \
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DM=$(M) -DN=$(N) laplace_kernel1_test.o laplace_kernel2_test.o laplace_test.o -o laplace_test_rtx.out; \
+	$(RM) laplace_kernel*_test.o laplace_test.o;
+
+clean:
+	$(RM) *.o *_rtx.out

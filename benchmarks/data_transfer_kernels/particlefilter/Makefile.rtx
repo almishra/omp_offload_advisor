@@ -1,0 +1,36 @@
+# C++ compiler
+CXX = clang++
+CFLAGS = -Wall -O3 -fopenmp
+OFFLOAD_FLAGS = -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75
+N1 = 1000000
+ 
+all:
+	@echo "Please run make for individual archs"
+	@echo "make -f Makefile.<arch>"
+
+data: test
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter.cpp -o particlefilter_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel1_data.cpp -o particlefilter_kernel1_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel2_data.cpp -o particlefilter_kernel2_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel3_data.cpp -o particlefilter_kernel3_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel4_data.cpp -o particlefilter_kernel4_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel5_data.cpp -o particlefilter_kernel5_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel6_data.cpp -o particlefilter_kernel6_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel7_data.cpp -o particlefilter_kernel7_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -lm -DN=$(N) particlefilter_kernel?_data_test.o  particlefilter_test.o -o particlefilter_data_test_rtx.out
+	$(RM) particlefilter_kernel*_test.o particlefilter_test.o
+
+test:
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter.cpp -o particlefilter_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel1.cpp -o particlefilter_kernel1_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel2.cpp -o particlefilter_kernel2_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel3.cpp -o particlefilter_kernel3_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel4.cpp -o particlefilter_kernel4_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel5.cpp -o particlefilter_kernel5_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel6.cpp -o particlefilter_kernel6_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -c -DN=$(N1) particlefilter_kernel7.cpp -o particlefilter_kernel7_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -lm -DN=$(N) particlefilter_kernel?_test.o  particlefilter_test.o -o particlefilter_test_rtx.out
+	$(RM) particlefilter_kernel*_test.o particlefilter_test.o
+
+clean:
+	$(RM) *.o *_rtx.out

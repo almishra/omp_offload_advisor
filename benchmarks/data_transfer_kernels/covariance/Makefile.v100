@@ -1,0 +1,26 @@
+# C++ compiler
+CXX = clang++
+CFLAGS = -Wall -O3 -fopenmp
+OFFLOAD_FLAGS = -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
+N1=10000000
+
+all:
+	@echo "Please run make for individual archs"
+	@echo "make -f Makefile.<arch>"
+
+data: test
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) -c covariance.cpp -o covariance_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) -c covariance_kernel1_data.cpp -o covariance_kernel1_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) -c covariance_kernel2_data.cpp -o covariance_kernel2_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) covariance_kernel?_data_test.o covariance_test.o -o covariance_data_test_v100.out
+	$(RM) covariance*_test.o
+
+test: covariance.cpp covariance_kernel1.cpp covariance_kernel2.cpp
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) -c covariance.cpp -o covariance_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) -c covariance_kernel1.cpp -o covariance_kernel1_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) -c covariance_kernel2.cpp -o covariance_kernel2_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DN=$(N1) covariance_kernel?_test.o covariance_test.o -o covariance_test_v100.out
+	$(RM) covariance*_test.o
+
+clean:
+	$(RM) *.o *_v100.out

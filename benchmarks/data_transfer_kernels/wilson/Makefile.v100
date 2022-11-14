@@ -1,0 +1,27 @@
+# C++ compiler
+CXX = clang++
+CFLAGS = -Wall -O3 -fopenmp
+OFFLOAD_FLAGS = -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
+X=32
+Y=32
+Z=32
+T=32
+
+all:
+	@echo "Please run make for individual archs"
+	@echo "make -f Makefile.<arch>"
+
+data: test wilson.cpp wilson_kernel_data.cpp
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DLX=$(X) -DLY=$(Y) -DLZ=$(Z) -DLT=$(T) -c wilson.cpp -o wilson_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DLX=$(X) -DLY=$(Y) -DLZ=$(Z) -DLT=$(T) -c wilson_kernel_data.cpp -o wilson_kernel_data_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DLX=$(X) -DLY=$(Y) -DLZ=$(Z) -DLT=$(T) wilson_kernel_data_test.o wilson_test.o -o wilson_data_test_v100.out
+	$(RM) *_test.o
+
+test: wilson.cpp wilson_kernel.cpp
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DLX=$(X) -DLY=$(Y) -DLZ=$(Z) -DLT=$(T) -c wilson.cpp -o wilson_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DLX=$(X) -DLY=$(Y) -DLZ=$(Z) -DLT=$(T) -c wilson_kernel.cpp -o wilson_kernel_test.o
+	$(CXX) $(CFLAGS) $(OFFLOAD_FLAGS) -DLX=$(X) -DLY=$(Y) -DLZ=$(Z) -DLT=$(T) wilson_kernel_test.o wilson_test.o -o wilson_test_v100.out
+	$(RM) *_test.o
+
+clean:
+	$(RM) *.o *_v100.out

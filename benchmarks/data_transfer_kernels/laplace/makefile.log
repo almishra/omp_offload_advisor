@@ -1,0 +1,10 @@
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 -c laplace.cpp -o laplace_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 -c laplace_kernel1.cpp -o laplace_kernel1_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 -c laplace_kernel2.cpp -o laplace_kernel2_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 laplace_kernel1_test.o laplace_kernel2_test.o laplace_test.o -o laplace_test_rtx.out; \
+rm -f laplace_kernel*_test.o laplace_test.o;
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 -c laplace.cpp -o laplace_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 -c laplace_kernel1_data.cpp -o laplace_kernel1_data_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 -c laplace_kernel2_data.cpp -o laplace_kernel2_data_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DM=10000 -DN=10000 laplace_kernel1_data_test.o laplace_kernel2_data_test.o laplace_test.o -o laplace_data_test_rtx.out; \
+rm -f laplace_kernel*_data_test.o laplace_test.o;

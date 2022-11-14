@@ -1,0 +1,8 @@
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=1000 -c gauss.cpp -o gauss_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=1000 -c gauss_kernel.cpp -o gauss_kernel_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=1000 gauss_kernel_test.o gauss_test.o -o gauss_test_rtx.out; \
+rm -f gauss_kernel_test.o gauss_test.o;
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=1000 -c gauss.cpp -o gauss_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=1000 -c gauss_kernel.cpp -o gauss_kernel_data_test.o; \
+clang++ -Wall -O3 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_75 -DN=1000 gauss_kernel_data_test.o gauss_test.o -o gauss_data_test_rtx.out; \
+rm -f gauss_kernel_data_test.o gauss_test.o;
