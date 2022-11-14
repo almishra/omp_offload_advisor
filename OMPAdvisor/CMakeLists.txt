@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)  
 
-add_llvm_library(omp-advisor MODULE 
+add_llvm_library(OMPAdvisor MODULE
     Loop.cpp
     Kernel.cpp
     OMPAdvisor_Visitor.cpp

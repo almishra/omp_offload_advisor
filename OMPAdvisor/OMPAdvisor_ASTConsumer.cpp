@@ -56,6 +56,13 @@ void OMPAdvisorASTConsumer::HandleTranslationUnit(ASTContext &Context) {
 //  getLoopInfo();
 
   string filename = basename(SM->getFilename(SM->getLocForStartOfFile(SM->getMainFileID())).str());
+  if(kernel_map.empty()) {
+    llvm::errs().changeColor(raw_ostream::RED);
+    llvm::errs() << "No kernel found in " << filename << "\n";
+    llvm::errs().resetColor();
+    return;
+  }
+
   llvm::outs() << "Filename = " << filename << "\n";
   string directory = SM->getFileEntryForID(SM->getMainFileID())->tryGetRealPathName().str();
   size_t lastindex = directory.find_last_of(".");
